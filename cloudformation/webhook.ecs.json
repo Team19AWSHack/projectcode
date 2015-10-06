@@ -375,7 +375,8 @@
         "DesiredCapacity" : { "Ref" : "AsgMaxSize" },
         "Tags" : [ { "Key" : "Name", "Value" : { "Fn::Join" : ["", [ "ECS Instance - ", { "Ref" : "AWS::StackName" } ] ] }, "PropagateAtLaunch" : "true" } ]
       }
-    }
+    },
+    
 
   },
 
