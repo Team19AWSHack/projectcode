@@ -32,8 +32,10 @@ def webhook():
 
     data = {
         "values" : values,
-        "lat" : str(loc['results'][0]['geometry']['location']['lat']),
-        "lon" : str(loc['results'][0]['geometry']['location']['lng']),
+        "location" : {
+            "lat" : str(loc['results'][0]['geometry']['location']['lat']),
+            "lon" : str(loc['results'][0]['geometry']['location']['lng']),
+        }
         "english" : loc['results'][0]['formatted_address']
     }
 
