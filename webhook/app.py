@@ -60,6 +60,8 @@ def receiver():
     phone = request.form.get("phone")
     receiver = request_table.get_item(phone=phone)
     receiver['type'] = "receiver"
+    reciever['vaccine_type'] = request.form.get("vaccine_type")
+    reciever['number_of_vaccines'] = request.form.get("number_of_vaccines")
     receiver.save()
     loc = normalize_location("%s, %s" % (receiver['location']['lat'], receiver['location']['lon']))
     #TODO: Query for closest locations
@@ -71,7 +73,9 @@ def receiver():
         "extra": {
             "location": receiver['location'],
             "location_english" : loc['results'][0]['formatted_address'],
-            "receiver_phone" : phone
+            "receiver_phone" : phone,
+            "units" : reciever['number_of_vaccines'],
+            "vaccine_type" : reciever['vaccine_type']
         }
     }
     res = requests.post("https://api.rapidpro.io/api/v1/runs.json", headers={
@@ -84,6 +88,7 @@ def giver():
     phone = request.form.get("phone")
     giver = request_table.get_item(phone=phone)
     giver['type'] = "giver"
+    return Response(json.dumps(request.form), mimetype="application/json")
 
 if __name__ == "__main__":
     app.debug = True
