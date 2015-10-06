@@ -8,4 +8,4 @@ RUN pip install -Ur requirements.txt
 
 EXPOSE 8000
 
-CMD ["gunicorn", "-b=0.0.0.0:8000", "api:app"]
+CMD ["gunicorn", "-b=0.0.0.0:8000", "app:app"]
