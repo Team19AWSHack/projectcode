@@ -1,0 +1,162 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "RE:Invent Hackathon Team 19 - UNICEF",
+  "Parameters": {
+    "Stack": {
+      "Default": "team19UNICEF",
+      "Description": "Stack applied as a tag",
+      "Type": "String"
+    },
+    "KeyName": {
+      "Default": "reinvent19",
+      "Description": "Name of an existing EC2 KeyPair for SSH access",
+      "Type": "AWS::EC2::KeyPair::KeyName"
+    },
+    "SSHLocation" : {
+  "Description" : " The IP address range that can be used to SSH to the EC2 instances",
+  "Type": "String",
+  "MinLength": "9",
+  "MaxLength": "18",
+  "Default": "0.0.0.0/0",
+  "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+  "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
+}
+},
+    "Stage": {
+      "Description": "Stage applied as a tag",
+      "Type": "String",
+      "Default": "PROD",
+      "AllowedValues": [
+        "PROD",
+        "DEV"
+      ],
+      "ConstraintDescription": "must be a valid stage eg. PROD, DEV"
+    },
+    "VpcId": {
+      "Description": "ID of the VPC onto which to launch the application eg. vpc-1234abcd",
+      "Type": "AWS::EC2::VPC::Id"
+    },
+    "PublicVpcSubnets": {
+      "Description": "Subnets to use in VPC for public ELB eg. subnet-abcd1234",
+      "Type": "List<AWS::EC2::Subnet::Id>"
+    },
+    "PrivateVpcSubnets": {
+      "Description": "Subnets to use in VPC for instances eg. subnet-abcd1234",
+      "Type": "List<AWS::EC2::Subnet::Id>"
+    },
+    "HostedZoneName": {
+      "Default": "team19awshack.com",
+      "Description": "Route53 Hosted Zone in which  aliases will be created (without the trailing dot). Leave blank for no ALIAS.",
+      "Type": "String",
+      "AllowedPattern": "^(.*[^.]|)$"
+    },
+    "S3Bucket": {
+      "Default": "s3://BUCKET-NAME/",
+      "Description": "S3 bucket name",
+      "Type": "String"
+    },
+    "HaskKeyElementName" : {
+      "Description" : "HashType PrimaryKey Name",
+      "Default": "Contact",
+      "Type" : "String",
+      "AllowedPattern" : "[a-zA-Z0-9]*",
+      "MinLength": "1",
+      "MaxLength": "2048"
+    },
+    "HaskKeyElementType" : {
+      "Description" : "HashType PrimaryKey Type",
+      "Default": "VaccineRequest",
+      "Type" : "String",
+      "AllowedPattern" : "[a-zA-Z0-9]*",
+      "MinLength": "1",
+      "MaxLength": "2048"
+    },
+    "ReadCapacityUnits" : {
+      "Description" : "Provisioned read throughput",
+      "Type" : "Number",
+      "Default" : "5",
+      "MinValue": "5",
+      "MaxValue": "10000",
+      "ConstraintDescription" : "must be between 5 and 10000"
+    },
+
+    "WriteCapacityUnits" : {
+      "Description" : "Provisioned write throughput",
+      "Type" : "Number",
+      "Default" : "10",
+      "MinValue": "5",
+      "MaxValue": "10000",
+      "ConstraintDescription" : "must be between 5 and 10000"
+    }
+    },
+    "Resources" : {
+       "myDynamoDBTable" : {
+         "Type" : "AWS::DynamoDB::Table",
+         "Properties" : {
+           "AttributeDefinitions" : [
+             {
+               "AttributeName" : "Contact",
+               "AttributeType" : "S"
+             },
+             {
+               "AttributeName" : "VaccineRequest",
+               "AttributeType" : "S"
+             }
+           ],
+           "KeySchema" : [
+             {
+               "AttributeName" : "Album",
+               "KeyType" : "HASH"
+             },
+             {
+               "AttributeName" : "Artist",
+               "KeyType" : "RANGE"
+             }
+           ],
+           "ProvisionedThroughput" : {
+             "ReadCapacityUnits" : "5",
+             "WriteCapacityUnits" : "5"
+           },
+           "TableName" : "myTableName",
+           "GlobalSecondaryIndexes" : [{
+             "IndexName" : "myGSI",
+             "KeySchema" : [
+               {
+                 "AttributeName" : "Sales",
+                 "KeyType" : "HASH"
+               },
+               {
+                 "AttributeName" : "Artist",
+                 "KeyType" : "RANGE"
+               }
+             ],
+             "Projection" : {
+               "NonKeyAttributes" : ["Album"],
+               "ProjectionType" : "INCLUDE"
+             },
+             "ProvisionedThroughput" : {
+               "ReadCapacityUnits" : "5",
+               "WriteCapacityUnits" : "5"
+             }
+           }],
+           "LocalSecondaryIndexes" :[{
+             "IndexName" : "myLSI",
+             "KeySchema" : [
+               {
+                 "AttributeName" : "Album",
+                 "KeyType" : "HASH"
+               },
+               {
+                 "AttributeName" : "Sales",
+                 "KeyType" : "RANGE"
+               }
+             ],
+             "Projection" : {
+               "NonKeyAttributes" : ["Artist"],
+               "ProjectionType" : "INCLUDE"
+             }
+           }]
+         }
+       }
+     }
+    }
