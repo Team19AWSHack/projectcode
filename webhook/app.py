@@ -35,7 +35,7 @@ def webhook():
         "location" : {
             "lat" : str(loc['results'][0]['geometry']['location']['lat']),
             "lon" : str(loc['results'][0]['geometry']['location']['lng']),
-        }
+        },
         "english" : loc['results'][0]['formatted_address']
     }
 
