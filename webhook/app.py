@@ -4,6 +4,7 @@ import json
 import os
 
 import boto
+import elasticsearch
 from flask import Flask, request, abort, render_template, Response
 import requests
 
@@ -68,13 +69,14 @@ def receiver():
     payload = {
         "flow_uuid": GIVER_FLOW_UUID,
         "phone": [
-            "+7173327758"
+            "7173327758"
         ],
         "extra": {
-            "location": receiver['location'],
+            "lat" : receiver['location']['lat'],
+            "lon" : receiver['location']['lon'],
             "location_english" : loc['results'][0]['formatted_address'],
             "receiver_phone" : phone,
-            "units" : receiver['number_of_vaccines'],
+            "number_of_vaccines" : receiver['number_of_vaccines'],
             "vaccine_type" : receiver['vaccine_type']
         }
     }
