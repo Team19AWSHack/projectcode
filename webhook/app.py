@@ -18,6 +18,8 @@ GOOGLE_REQUEST = "https://maps.googleapis.com/maps/api/geocode/json?address=%s&k
 
 RAPIDPRO_API_KEY = os.environ.get("RAPIDPRO_API_KEY")
 GIVER_FLOW_UUID = "ff270149-ee71-4aa8-99c4-4fe13d748a43"
+REQUESTOR_CONNECT = "d081b452-7663-40a0-bde8-a2930887f690"
+GIVER_CONNECT = "d647f9ef-aab3-4dca-84bc-f9a20fe09d91"
 
 ELASTISEARCH_SEARCH_URL = "https://search-team19awshack-moysia77rywudaydpowzulzagy.us-east-1.es.amazonaws.com/user_locations/_search?pretty=true"
 ELASTISEARCH_QUERY = {
@@ -93,6 +95,8 @@ def closest_locations(location):
 def receiver():
     phone = request.form.get("phone")
     receiver = request_table.get_item(phone=phone)
+    if not receiver:
+        receiver = request_table.new_item(phone=phone)
     values = json.loads(request.form['values'])
     receiver['vaccine_type'] = values[0]['value']
     receiver['number_of_vaccines'] = values[1]['value']
@@ -151,7 +155,31 @@ def giver():
 def connect():
     for req in request_table.scan():
         if not req['received_time']:
-            pass
+            payload = {
+                "flow_uuid": GIVER_CONNECT,
+                "phone": req['responder'],
+                "extra": {
+                    "time_to_response" : str(req['time_to_response']),
+                    "requester" :
+                }
+            }
+            res = requests.post("https://api.rapidpro.io/api/v1/runs.json", headers={
+                "Authorization" : "Token %s" % RAPIDPRO_API_KEY,
+                'content-type': 'application/json'
+            }, data=json.dumps(payload))
+
+            payload = {
+                "flow_uuid": GIVER_CONNECT,
+                "phone": req['responder'],
+                "extra": {
+                    "time_to_response" : str(req['time_to_response'])
+                }
+            }
+            res = requests.post("https://api.rapidpro.io/api/v1/runs.json", headers={
+                "Authorization" : "Token %s" % RAPIDPRO_API_KEY,
+                'content-type': 'application/json'
+            }, data=json.dumps(payload))
+
 
 if __name__ == "__main__":
     app.debug = True
