@@ -81,7 +81,7 @@ def receiver():
     res = requests.post("https://api.rapidpro.io/api/v1/runs.json", headers={
         "Authorization" : "Token %s" % RAPIDPRO_API_KEY
     }, data=payload)
-    return Response(json.dumps({"status" : "success"}))
+    return Response(json.dumps({ "status" : "success", "response" : res.json() }), mimetype="application/json")
 
 @app.route("/has", methods=["POST"])
 def has():
