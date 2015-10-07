@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Unicef Mobile Response Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Le styles -->
+    <link href="css/bootstrap.css" rel="stylesheet">
+    <style type="text/css">
+      body {
+        padding-top: 20px;
+        padding-bottom: 40px;
+        font-family: 'Open Sans', "Helvetica Neue", Helvetica, Arial, sans-serif;
+      }
+      /* Custom container */
+      .container-narrow {
+        margin: 0 auto;
+        max-width: 1000px;
+      }
+      .container-narrow > hr {
+        margin: 30px 0;
+      }
+
+      /* Supporting marketing content */
+      .marketing {
+        margin: 60px 0;
+      }
+      .marketing p + h4 {
+        margin-top: 28px;
+      }
+    
+    div.chartbox { border-color: black; border-width: 1px; border-style: solid;}
+  
+    #overdue, #lasthour {
+      text-align: center;
+      color: white;
+    }
+    span.OverdueBody {
+      font-size: 180px;
+    }
+    span.OverdueHead {
+      font-size: 24px;
+      font-weight: 400;
+      line-height: 40px;
+    } 
+    #googleMap { height: 100%; }
+    
+    </style>
+    <link href="css/bootstrap-responsive.css" rel="stylesheet">
+
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="../assets/js/html5shiv.js"></script>
+    <![endif]-->
+
+    <!-- Fav and touch icons -->
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="../assets/ico/apple-touch-icon-144-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="../assets/ico/apple-touch-icon-114-precomposed.png">
+      <link rel="apple-touch-icon-precomposed" sizes="72x72" href="../assets/ico/apple-touch-icon-72-precomposed.png">
+                    <link rel="apple-touch-icon-precomposed" href="../assets/ico/apple-touch-icon-57-precomposed.png">
+                                   <link rel="shortcut icon" href="../assets/ico/favicon.png">
+  
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+    <script type="text/javascript">
+      //SET THIS VALUE
+      var hostName = 'http://52.2.196.26:8000/'
+     
+    
+      google.load("visualization", "1", {packages:["corechart", "bar"]});
+      google.load("visualization", "1", {packages:["table"]});
+
+      google.setOnLoadCallback(drawTopX);
+      google.setOnLoadCallback(drawTable);
+      google.setOnLoadCallback(checkLastHour);
+      google.setOnLoadCallback(drawPieChart);
+      google.setOnLoadCallback(checkOverdueStatus);
+      
+      function drawTable() {
+        var data = new google.visualization.DataTable();
+        data.addColumn('string', 'Location Description');
+        data.addColumn('string', 'Lat/Long');
+        data.addColumn('string', 'Care Needed');
+        data.addColumn('string', 'Qty')
+        data.addColumn('string', 'Status');
+        
+        $.getJSON(hostName+"stats/requests/last10", function(json) { 
+          for (i = 0; i < json.Items.length; i++) {
+            data.addRow(
+              [json.Items[i].english.S, 
+                json.Items[i].location.M.lat.S+","+json.Items[i].location.M.lon.S, 
+                json.Items[i].vaccine_type.S, 
+                json.Items[i].number_of_vaccines.S,
+                'received'
+               ]
+            );
+          } 
+          
+          var table = new google.visualization.Table(document.getElementById('table_div'));
+
+          table.draw(data, {showRowNumber: false, width: '800px', height: '100%'});
+        });
+
+        
+      }
+      
+      function checkLastHour() {
+        $.getJSON(hostName+"stats/requests/lasthour", function(json) {
+          
+          if (json.Count > 0 && json.Count < 5) {
+            //Set background color red and display #
+            $("#lasthour").css('background-color', 'orange');
+            $("#lasthour").html("<span class='OverdueHead'>Requests in last hour</span><br><br><br><br><br><span class='OverdueBody'>" + json.Count.toString() + "</span>");
+          } else if (json.Count >= 5) {
+            //Set background color red and display #
+           $("#lasthour").css('background-color', 'red');
+            $("#lasthour").html("<span class='OverdueHead'>Requests in last hour</span><br><br><br><br><br><span class='OverdueBody'>" + json.Count.toString() + "</span>");
+          } else {
+            $("#lasthour").css('background-color', 'green');
+            $("#lasthour").html("<span class='OverdueHead'>Requests in last hour</span><br><br><br><br><br><span class='OverdueBody'>0</span>");
+          }
+           
+           setTimeout(function () {
+                checkLastHour();
+           }, 10000);
+        });
+      }
+      
+      function drawPieChart() {
+        $.getJSON(hostName+"stats/requests/summary", function(json) {
+          //console.log(json);
+          var data = google.visualization.arrayToDataTable([
+            ['Status', 'Count'],
+            ['Fulfilled',     json.FulfilledCount],
+            ['Requested', json.RequestedCount],
+            ['Assigned',  json.AssignedCount]
+          ]);
+  
+          var options = {
+            title: 'Current Request Status',
+            pieHole: 0.4,
+            height: '100%',
+            width: '100%'
+          };
+  
+          var chart = new google.visualization.PieChart(document.getElementById('donutchart'));
+          chart.draw(data, options);
+       
+          setTimeout(function () {
+                drawPieChart();
+          }, 5000);
+         
+        });
+      }
+      
+      function checkOverdueStatus() {
+        $.getJSON(hostName+"stats/requests/overdue", function(json) {
+          if (json.Count > 0) {
+            //Set background color red and display #
+            $("#overdue").css('background-color', 'red');
+            $("#overdue").html("<span class='OverdueHead'>Overdue Requests</span><br><br><br><br><br><span class='OverdueBody'>" + json.Count.toString() + "</span>");
+          } else {
+            //Set background color green and display 0
+            $("#overdue").css('background-color', 'green');
+            $("#overdue").html("<span class='OverdueHead'>Overdue Requests</span><br><br><br><br><br><span class='OverdueBody'>0</span>");
+          }
+        });
+      }
+      
+      function drawTopX() {
+           $.getJSON(hostName+"stats/requests/summary?id=1", function(json) {
+        
+            var data = new google.visualization.DataTable();
+            data.addColumn('string', 'Date');
+            data.addColumn('number', 'Requested');
+            data.addColumn('number', 'Assigned');
+            data.addColumn('number', 'Fulfilled');
+      
+            data.addRows([
+              ['9/30', 0, 0, 0],
+              ['10/1', 0, 0, 0],
+              ['10/2', 0, 0, 0],
+              ['10/3', 0, 0, 0],
+              ['10/4', 0, 0, 0],
+              ['10/5', 0, 0, 0],
+              ['10/6', json.RequestedCount, json.AssignedCount, json.FulfilledCount]
+            ]);
+      
+            var options = {
+              chart: {
+                title: 'Requests By Day',
+                subtitle: 'Last 7 days'
+              },
+              height: '300px',
+              axes: {
+                x: {
+                  0: {side: 'top'}
+                }
+              },
+              hAxis: {
+                title: 'Day'
+              },
+              vAxis: {
+                title: '#',
+                minValue: 0
+              }
+            };
+      
+            var material = new google.charts.Bar(document.getElementById('vertical_chart_div'));
+            material.draw(data, options);
+        });
+      }
+      
+    </script>
+  </head>
+
+  <body>
+
+    <div class="container-narrow">
+
+      <div class="masthead">
+        <h3><img src="img/unicef_logo.png" /><span style="margin-left: 40px;">Mobile Response Dashboard</span></h3>  
+      </div>
+      <hr>
+      
+      <div class="row-fluid">
+        <div class="span6">
+          <div class="chartbox" id="donutchart" style="width: 500px; height: 300px;"></div>
+        </div>
+        <div class="span2">
+          <div class="chartbox" id="overdue" style="width: 225px; height: 300px;"></div>
+        </div>
+      </div>
+      
+      <br />
+
+      <div class="row-fluid">
+        <div class="span6">
+          <div id="vertical_chart_div" style="height: 300px;"></div>
+        </div>
+        <div class="span2">
+          <div class="chartbox" id="lasthour" style="width: 225px; height: 300px;"></div>
+        </div>
+      </div>
+      
+      <br />
+      
+       <div class="row-fluid">
+        <div class="span8">
+          <div id="table_div" style="width: 725px;"></div>
+        </div>
+      </div>
+      
+      <br />
+
+      <div class="row-fluid">
+        <div class="span8">
+          <div id="googleMap" style="width: 800px; height: 400px;"></div>
+        </div>
+      </div>
+    
+      
+
+      <hr>
+      <div class="footer">
+        <p>&copy; Produced in 2015 by Team 19, Table 15, Venetian, Las Vegas, NV.</p>
+      </div>
+
+    </div> <!-- /container -->
+    <script>
+      
+      var locations;
+      var map;
+      
+      function initMap() {
+        map = new google.maps.Map(document.getElementById('googleMap'), {
+          zoom: 4,
+          center: {lat: 36.363, lng: -115.044}
+        });
+        
+        $.getJSON(hostName+"stats/requests/all", function(json) {
+          //console.log(json);
+          
+          for (i = 0; i < json.Items.length; i++) {
+            marker = new google.maps.Marker({
+              position: new google.maps.LatLng(json.Items[i].location.M.lat.S, json.Items[i].location.M.lon.S),
+              map: map
+            });
+            
+            var infowindow = new google.maps.InfoWindow({
+              content: json.Items[i].english.S + '<br />Service needed: ' + json.Items[i].vaccine_type.S + ' (' + json.Items[i].number_of_vaccines.S + ')'
+            });
+          
+            google.maps.event.addListener(marker, 'click', (function(marker, i) {
+              return function() {
+                infowindow.open(map, marker);
+               }
+           })(marker, i));
+          }
+        });
+      }
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAbGki1NAJYKqTcYLpCex1qd1TnqNhxo1w&callback=initMap" async defer></script>
+  </body>
+</html>

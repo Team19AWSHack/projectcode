@@ -1,0 +1,74 @@
+<html>
+  <head>
+    <style type="text/css">
+    body {
+      font-family: 'Open Sans', "Helvetica Neue", Helvetica, Arial, sans-serif;
+      float: left;
+      background-color: white;
+    }
+    #overdue {
+      text-align: center;
+      color: white;
+    }
+    span.OverdueBody {
+      font-size: 120px;
+    }
+    span.OverdueHead {
+      margin-bottom: 20px;
+      font-size: 24px;
+      font-weight: 400;
+    } 
+    </style>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+    <script type="text/javascript">
+      google.load("visualization", "1", {packages:["corechart"]});
+      google.setOnLoadCallback(drawPieChart);
+      google.setOnLoadCallback(checkOverdueStatus);
+      
+      function drawPieChart() {
+        $.getJSON("http://127.0.0.1:8000/stats/requests/summary", function(json) {
+          console.log(json);
+          var data = google.visualization.arrayToDataTable([
+            ['Status', 'Count'],
+            ['Fulfilled',     11],
+            ['Requested',      2],
+            ['Assigned',  2]
+          ]);
+  
+          var options = {
+            title: 'Request Status',
+            pieHole: 0.4,
+            backgroundColor: 'yellow'
+          };
+  
+          var chart = new google.visualization.PieChart(document.getElementById('donutchart'));
+          chart.draw(data, options);
+       
+          setTimeout(function () {
+                drawPieChart();
+            }, 5000);
+         
+        });
+      }
+      
+      function checkOverdueStatus() {
+        $.getJSON("http://127.0.0.1:8000/stats/requests/overdue", function(json) {
+          if (json.Count > 0) {
+            //Set background color red and display #
+            $("#overdue").css('background-color', 'red');
+            $("#overdue").html("<span class='OverdueHead'>Overdue Requests</span><br><span class='OverdueBody'>" + json.Count.toString() + "</span>");
+          } else {
+            //Set background color green and display 0
+            $("#overdue").css('background-color', 'green');
+            $("#overdue").html("<span class='OverdueHead'>Overdue Requests</span><br><span class='OverdueBody'>0</span>");
+          }
+        });
+      }
+    </script>
+  </head>
+  <body>
+    <div id="donutchart" style="width: 500px; height: 300px;"></div>
+    <div id="overdue" style="width: 300px; height: 300px;"></div>
+  </body>
+</html>

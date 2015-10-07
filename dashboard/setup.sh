@@ -1,0 +1,3 @@
+export AWS_KEY=[YOUR AWS KEY]
+export AWS_SECRET=[YOUR AWS SECRET]
+echo 'AWS KEY and SECRET set.'
