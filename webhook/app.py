@@ -3,14 +3,14 @@ from decimal import Decimal
 import json
 import os
 
-import boto
-from boto.dynamodb2.exceptions import ItemNotFound
 from flask import Flask, request, abort, render_template, Response
 import requests
 
 app = Flask(__name__)
 
 from boto.dynamodb2.table import Table
+from boto.dynamodb2.items import Item
+from boto.dynamodb2.exceptions import ItemNotFound
 
 request_table = Table("VaccineRequest")
 
@@ -98,7 +98,7 @@ def receiver():
     try:
         receiver = request_table.get_item(phone=phone)
     except ItemNotFound:
-        receiver = request_table.new_item(phone=phone)
+        receiver = Item(request_table, data={"phone" : phone })
     values = json.loads(request.form['values'])
     receiver['vaccine_type'] = values[0]['value']
     receiver['number_of_vaccines'] = values[1]['value']
@@ -185,6 +185,14 @@ def connect():
 
             return Response(json.dumps({"status" : "success" }))
 
+
+@app.route("/received")
+def received():
+    for req in request_table.scan():
+        if not req['received_time']:
+            req['received_time'] = int(time.time())
+            req.save()
+    return Response(json.dumps({"status" : "success" }))
 
 if __name__ == "__main__":
     app.debug = True
