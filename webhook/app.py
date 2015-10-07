@@ -4,7 +4,6 @@ import json
 import os
 
 import boto
-import elasticsearch
 from flask import Flask, request, abort, render_template, Response
 import requests
 
@@ -55,6 +54,10 @@ def get_rapidpro_contact_info(phone):
         "Authorization" : "Token %s" % RAPIDPRO_API_KEY
     })
     return res.json()['results'][0]
+
+
+def closest_locations(location):
+    pass
 
 @app.route("/receiver", methods=["POST"])
 def receiver():
