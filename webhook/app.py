@@ -2,6 +2,7 @@ import time
 from decimal import Decimal
 import json
 import os
+import urlparse
 
 import boto
 from flask import Flask, request, abort, render_template, Response
@@ -18,6 +19,29 @@ GOOGLE_REQUEST = "https://maps.googleapis.com/maps/api/geocode/json?address=%s&k
 
 RAPIDPRO_API_KEY = os.environ.get("RAPIDPRO_API_KEY")
 GIVER_FLOW_UUID = "ff270149-ee71-4aa8-99c4-4fe13d748a43"
+
+ELASTISEARCH_SEARCH_URL = "https://search-team19awshack-moysia77rywudaydpowzulzagy.us-east-1.es.amazonaws.com/user_locations/_search?pretty=true"
+ELASTISEARCH_QUERY = {
+  "sort" : [
+      {
+          "_geo_distance" : {
+              "order" : "asc",
+              "unit" : "km"
+          }
+      }
+  ],
+  "query" : {
+    "filtered" : {
+        "query" : {
+            "match_all" : {}
+        },
+        "filter" : {
+            "geo_distance" : {
+                "distance" : "50000km",
+            }
+        }
+    }
+}}
 
 def normalize_location(loc_string):
     print GOOGLE_REQUEST % (loc_string, GOOGLE_API_KEY)
@@ -57,36 +81,47 @@ def get_rapidpro_contact_info(phone):
 
 
 def closest_locations(location):
-    pass
+    payload = ELASTISEARCH_QUERY
+    payload['sort'][0]["_geo_distance"]['location'] = location
+    payload['query']['filtered']['filter']['geo_distance']['location'] = location
+
+    res = requests.get(ELASTISEARCH_SEARCH_URL, data=json.dumps(payload))
+    ret = []
+    for hit in res.json()['hits']['hits']:
+        ret.append(hit['_source']['phone'])
+    return ret
 
 @app.route("/receiver", methods=["POST"])
 def receiver():
     phone = request.form.get("phone")
     receiver = request_table.get_item(phone=phone)
-    receiver['type'] = "receiver"
-    receiver['vaccine_type'] = request.form.get("vaccine_type")
-    receiver['number_of_vaccines'] = request.form.get("number_of_vaccines")
+    values = json.loads(request.form['values'])
+    receiver['vaccine_type'] = values[0]['value']
+    receiver['number_of_vaccines'] = values[1]['value']
     receiver.save()
     loc = normalize_location("%s, %s" % (receiver['location']['lat'], receiver['location']['lon']))
-    #TODO: Query for closest locations
+
+    closest = closest_locations(receiver['location'])
+
+    extra = {
+        "lat" : receiver['location']['lat'],
+        "lon" : receiver['location']['lon'],
+        "location_english" : loc['results'][0]['formatted_address'],
+        "receiver_phone" : phone,
+        "number_of_vaccines" : receiver['number_of_vaccines'],
+        "vaccine_type" : receiver['vaccine_type']
+    }
+
     payload = {
         "flow_uuid": GIVER_FLOW_UUID,
-        "phone": [
-            "7173327758"
-        ],
-        "extra": {
-            "lat" : receiver['location']['lat'],
-            "lon" : receiver['location']['lon'],
-            "location_english" : loc['results'][0]['formatted_address'],
-            "receiver_phone" : phone,
-            "number_of_vaccines" : receiver['number_of_vaccines'],
-            "vaccine_type" : receiver['vaccine_type']
-        }
+        "phone": closest,
+        "extra": extra
     }
     res = requests.post("https://api.rapidpro.io/api/v1/runs.json", headers={
-        "Authorization" : "Token %s" % RAPIDPRO_API_KEY
-    }, data=payload)
-    return Response(json.dumps({ "status" : "success", "response" : res.json() }), mimetype="application/json")
+        "Authorization" : "Token %s" % RAPIDPRO_API_KEY,
+        'content-type': 'application/json'
+    }, data=json.dumps(payload))
+    return Response(json.dumps({ "status" : "success", "response" : res.json(), "closest" : closest }), mimetype="application/json")
 
 @app.route("/has", methods=["POST"])
 def has():
