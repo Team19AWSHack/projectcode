@@ -67,7 +67,6 @@ def location():
     d_data = data.copy()
     d_data['phone'] = request.form.get("phone")
     d_data['time'] = int(time.time())
-    d_data['received_time'] = int(time.time())
     request_table.put_item(data=d_data, overwrite=True)
 
     data['status'] = "success"
@@ -139,18 +138,20 @@ def receiver():
 
 @app.route("/giver", methods=["POST"])
 def giver():
-    # vac_req = request_table.scan(request.form)
-    # time_to_response = float(request.form['text'])
-    # if time_to_response < vac_req['time_to_response']:
-    #     vac_req['time_to_response'] = time_to_response
-    #     vac_req['responder'] = request.form['phone']
-    #     vac_req.save()
-    print request.form
+    values = json.loads(request.form['values'])
+    vac_req = request_table.get_item(phone=values[0]['receiver_phone'])
+    time_to_response = float(request.form['text'])
+    if time_to_response < vac_req['time_to_response']:
+        vac_req['time_to_response'] = time_to_response
+        vac_req['responder'] = request.form['phone']
+        vac_req.save()
     return Response(json.dumps(request.form), mimetype="application/json")
 
 @app.route("/connect")
 def connect():
-    pass
+    for req in request_table.scan():
+        if not req['received_time']:
+            pass
 
 if __name__ == "__main__":
     app.debug = True
