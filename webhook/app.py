@@ -144,6 +144,7 @@ def receiver():
 
 @app.route("/giver", methods=["POST"])
 def giver():
+    print request.form
     values = json.loads(request.form['values'])
     vac_req = request_table.get_item(phone=values[0]['receiver_phone'])
     time_to_response = float(request.form['text'])
