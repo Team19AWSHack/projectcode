@@ -4,6 +4,7 @@ import json
 import os
 
 import boto
+from boto.dynamodb2.exceptions import ItemNotFound
 from flask import Flask, request, abort, render_template, Response
 import requests
 
@@ -94,8 +95,9 @@ def closest_locations(location):
 @app.route("/receiver", methods=["POST"])
 def receiver():
     phone = request.form.get("phone")
-    receiver = request_table.get_item(phone=phone)
-    if not receiver:
+    try:
+        receiver = request_table.get_item(phone=phone)
+    except ItemNotFound:
         receiver = request_table.new_item(phone=phone)
     values = json.loads(request.form['values'])
     receiver['vaccine_type'] = values[0]['value']
