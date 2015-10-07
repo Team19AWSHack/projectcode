@@ -144,6 +144,7 @@ def receiver():
 
 @app.route("/giver", methods=["POST"])
 def giver():
+    print request.form
     values = json.loads(request.form['values'])
     vac_req = request_table.get_item(phone=values[0]['receiver_phone'])
     time_to_response = float(request.form['text'])
@@ -188,11 +189,10 @@ def connect():
 
 @app.route("/received")
 def received():
-    for req in request_table.scan():
-        if not req['received_time']:
-            req['received_time'] = int(time.time())
-            req.save()
-    return Response(json.dumps({"status" : "success" }))
+    req = request_table.get_item(request.form['phone'])
+    req['received_time'] = int(time.time())
+    req.save()
+    return Response(json.dumps({ "status" : "success" }))
 
 if __name__ == "__main__":
     app.debug = True
