@@ -102,7 +102,7 @@ def receiver():
     values = json.loads(request.form['values'])
     receiver['vaccine_type'] = values[0]['value']
     receiver['number_of_vaccines'] = values[1]['value']
-    reciever['status'] = "requested"
+    reciever['Status'] = "Requested"
     receiver.save()
     loc = normalize_location("%s, %s" % (receiver['location']['lat'], receiver['location']['lon']))
 
@@ -185,7 +185,7 @@ def connect():
                 'content-type': 'application/json'
             }, data=json.dumps(payload))
 
-            req['status'] = "assigned"
+            req['Status'] = "Assigned"
             req.save()
 
             return Response(json.dumps({"status" : "success" }))
@@ -195,7 +195,7 @@ def connect():
 def received():
     req = request_table.get_item(request.form['phone'])
     req['received_time'] = int(time.time())
-    req['status'] = "fulfilled"
+    req['Status'] = "Fulfilled"
     req.save()
     return Response(json.dumps({ "status" : "success" }))
 
