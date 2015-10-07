@@ -60,8 +60,8 @@ def receiver():
     phone = request.form.get("phone")
     receiver = request_table.get_item(phone=phone)
     receiver['type'] = "receiver"
-    reciever['vaccine_type'] = request.form.get("vaccine_type")
-    reciever['number_of_vaccines'] = request.form.get("number_of_vaccines")
+    receiver['vaccine_type'] = request.form.get("vaccine_type")
+    receiver['number_of_vaccines'] = request.form.get("number_of_vaccines")
     receiver.save()
     loc = normalize_location("%s, %s" % (receiver['location']['lat'], receiver['location']['lon']))
     #TODO: Query for closest locations
@@ -74,8 +74,8 @@ def receiver():
             "location": receiver['location'],
             "location_english" : loc['results'][0]['formatted_address'],
             "receiver_phone" : phone,
-            "units" : reciever['number_of_vaccines'],
-            "vaccine_type" : reciever['vaccine_type']
+            "units" : receiver['number_of_vaccines'],
+            "vaccine_type" : receiver['vaccine_type']
         }
     }
     res = requests.post("https://api.rapidpro.io/api/v1/runs.json", headers={
@@ -83,12 +83,24 @@ def receiver():
     }, data=payload)
     return Response(json.dumps({"status" : "success"}))
 
+@app.route("/has", methods=["POST"])
+def has():
+    phone = request.form.get("phone")
+    giver = request_table.get_item(phone=phone)
+    giver["available"] = giver.get("available", []) + [{ request.form.get("vaccine_type") : request.form.get("number_of_vaccines") }]
+    giver.save()
+    return Response(json.dumps({"status" : "success"}))
+
 @app.route("/giver", methods=["POST"])
 def giver():
     phone = request.form.get("phone")
     giver = request_table.get_item(phone=phone)
-    giver['type'] = "giver"
     return Response(json.dumps(request.form), mimetype="application/json")
+
+@app.route("/connect")
+def find_closest():
+    pass
+
 
 if __name__ == "__main__":
     app.debug = True
