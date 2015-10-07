@@ -2,7 +2,6 @@ import time
 from decimal import Decimal
 import json
 import os
-import urlparse
 
 import boto
 from flask import Flask, request, abort, render_template, Response
@@ -13,6 +12,7 @@ app = Flask(__name__)
 from boto.dynamodb2.table import Table
 
 request_table = Table("VaccineRequest")
+contacts_table = Table("Contacts")
 
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 GOOGLE_REQUEST = "https://maps.googleapis.com/maps/api/geocode/json?address=%s&key=%s"
@@ -68,6 +68,7 @@ def location():
     d_data = data.copy()
     d_data['phone'] = request.form.get("phone")
     d_data['time'] = int(time.time())
+    d_data['received_time'] = int(time.time())
     request_table.put_item(data=d_data, overwrite=True)
 
     data['status'] = "success"
@@ -79,7 +80,6 @@ def get_rapidpro_contact_info(phone):
     })
     return res.json()['results'][0]
 
-
 def closest_locations(location):
     payload = ELASTISEARCH_QUERY
     payload['sort'][0]["_geo_distance"]['location'] = location
@@ -87,7 +87,7 @@ def closest_locations(location):
 
     res = requests.get(ELASTISEARCH_SEARCH_URL, data=json.dumps(payload))
     ret = []
-    for hit in res.json()['hits']['hits']:
+    for hit in res.json()['hits']['hits'][:3]:
         ret.append(hit['_source']['phone'])
     return ret
 
@@ -102,7 +102,9 @@ def receiver():
     loc = normalize_location("%s, %s" % (receiver['location']['lat'], receiver['location']['lon']))
 
     closest = closest_locations(receiver['location'])
-
+    if not len(closest):
+        closest = [ "+17173327758" ]
+        # return Response(json.dumps({"status" : "success", "results" : "None"}))
     extra = {
         "lat" : receiver['location']['lat'],
         "lon" : receiver['location']['lon'],
@@ -123,23 +125,26 @@ def receiver():
     }, data=json.dumps(payload))
     return Response(json.dumps({ "status" : "success", "response" : res.json(), "closest" : closest }), mimetype="application/json")
 
-@app.route("/has", methods=["POST"])
-def has():
-    phone = request.form.get("phone")
-    giver = request_table.get_item(phone=phone)
-    giver["available"] = giver.get("available", []) + [{ request.form.get("vaccine_type") : request.form.get("number_of_vaccines") }]
-    giver.save()
-    return Response(json.dumps({"status" : "success"}))
+# @app.route("/has", methods=["POST"])
+# def has():
+#     phone = request.form.get("phone")
+#     giver = request_table.get_item(phone=phone)
+#     giver["available"] = giver.get("available", []) + [{ request.form.get("vaccine_type") : request.form.get("number_of_vaccines") }]
+#     giver.save()
+#     return Response(json.dumps({"status" : "success"}))
 
 @app.route("/giver", methods=["POST"])
 def giver():
-    phone = request.form.get("phone")
-    giver = request_table.get_item(phone=phone)
+    # vac_req =
+    # time_to_response = float(request.form['text'])
+    # if time_to_response < vac_req['time_to_response']:
+    #     vac_req['time_to_response'] = time_to_response
+    #     vac_req['responder'] = request.form['phone']
+    #     vac_req.save()
     return Response(json.dumps(request.form), mimetype="application/json")
 
 @app.route("/connect")
-def find_closest():
-    pass
+def connect():
 
 
 if __name__ == "__main__":
