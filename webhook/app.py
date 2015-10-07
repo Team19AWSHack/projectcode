@@ -162,7 +162,7 @@ def connect():
                 "phone": req['responder'],
                 "extra": {
                     "time_to_response" : str(req['time_to_response']),
-                    "requester" :
+                    "requester" : ""
                 }
             }
             res = requests.post("https://api.rapidpro.io/api/v1/runs.json", headers={
