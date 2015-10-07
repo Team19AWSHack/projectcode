@@ -12,7 +12,6 @@ app = Flask(__name__)
 from boto.dynamodb2.table import Table
 
 request_table = Table("VaccineRequest")
-contacts_table = Table("Contacts")
 
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 GOOGLE_REQUEST = "https://maps.googleapis.com/maps/api/geocode/json?address=%s&key=%s"
@@ -87,7 +86,7 @@ def closest_locations(location):
 
     res = requests.get(ELASTISEARCH_SEARCH_URL, data=json.dumps(payload))
     ret = []
-    for hit in res.json()['hits']['hits'][:3]:
+    for hit in res.json()['hits']['hits'][:4]:
         ret.append(hit['_source']['phone'])
     return ret
 
@@ -105,6 +104,11 @@ def receiver():
     if not len(closest):
         closest = [ "+17173327758" ]
         # return Response(json.dumps({"status" : "success", "results" : "None"}))
+    try:
+        closest.remove(phone)
+    except:
+        pass
+
     extra = {
         "lat" : receiver['location']['lat'],
         "lon" : receiver['location']['lon'],
@@ -135,17 +139,18 @@ def receiver():
 
 @app.route("/giver", methods=["POST"])
 def giver():
-    # vac_req =
+    # vac_req = request_table.scan(request.form)
     # time_to_response = float(request.form['text'])
     # if time_to_response < vac_req['time_to_response']:
     #     vac_req['time_to_response'] = time_to_response
     #     vac_req['responder'] = request.form['phone']
     #     vac_req.save()
+    print request.form
     return Response(json.dumps(request.form), mimetype="application/json")
 
 @app.route("/connect")
 def connect():
-
+    pass
 
 if __name__ == "__main__":
     app.debug = True
