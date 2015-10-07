@@ -162,7 +162,7 @@ def connect():
                 "phone": req['responder'],
                 "extra": {
                     "time_to_response" : str(req['time_to_response']),
-                    "requester" : ""
+                    "requester" : req['phone']
                 }
             }
             res = requests.post("https://api.rapidpro.io/api/v1/runs.json", headers={
@@ -171,16 +171,19 @@ def connect():
             }, data=json.dumps(payload))
 
             payload = {
-                "flow_uuid": GIVER_CONNECT,
-                "phone": req['responder'],
+                "flow_uuid": REQUESTOR_CONNECT,
+                "phone": req['phone'],
                 "extra": {
-                    "time_to_response" : str(req['time_to_response'])
+                    "time_to_response" : str(req['time_to_response']),
+                    "giver" : req['responder']
                 }
             }
             res = requests.post("https://api.rapidpro.io/api/v1/runs.json", headers={
                 "Authorization" : "Token %s" % RAPIDPRO_API_KEY,
                 'content-type': 'application/json'
             }, data=json.dumps(payload))
+
+            return Response(json.dumps({"status" : "success" }))
 
 
 if __name__ == "__main__":
