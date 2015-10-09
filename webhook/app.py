@@ -139,7 +139,7 @@ def receiver():
 def giver():
     print request.form
     values = json.loads(request.form['values'])
-    vac_req = request_table.get_item(phone=values[0]['receiver_phone'])
+    vac_req = request_table.get_item(phone=values[0]['value']['receiver_phone'])
     time_to_response = float(request.form['text'])
     if time_to_response < vac_req['time_to_response']:
         vac_req['time_to_response'] = time_to_response
