@@ -135,14 +135,6 @@ def receiver():
     }, data=json.dumps(payload))
     return Response(json.dumps({ "status" : "success", "response" : res.json(), "closest" : closest }), mimetype="application/json")
 
-# @app.route("/has", methods=["POST"])
-# def has():
-#     phone = request.form.get("phone")
-#     giver = request_table.get_item(phone=phone)
-#     giver["available"] = giver.get("available", []) + [{ request.form.get("vaccine_type") : request.form.get("number_of_vaccines") }]
-#     giver.save()
-#     return Response(json.dumps({"status" : "success"}))
-
 @app.route("/giver", methods=["POST"])
 def giver():
     print request.form
